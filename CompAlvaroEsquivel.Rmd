@@ -1,0 +1,232 @@
+---
+title: "Competencia kaggle"
+output: html_notebook
+---
+
+# Alvaro Andres Esquivel Gomez
+# 00112822
+
+# Link del video: https://drive.google.com/file/d/1eM2-W4TL0gueNqE2PtYqIMkhuEFTwCF_/view?usp=sharing
+
+```{r}
+# Load Packages
+library(Metrics)
+library(corrplot)
+library(randomForest)
+library(lars)
+library(ggplot2)
+library(xgboost)
+library(Matrix)
+library(methods)
+library(caret)
+library(dplyr)
+
+
+```
+
+### Lectura de datos
+```{r}
+Training <- read.csv("train.csv")
+Test <- read.csv("test.csv")
+summary(Training)
+```
+
+
+### Eliminando valores NA
+
+```{r}
+
+#Agrego a los valores faltantes el promedio de total_bedrooms
+Training[is.na(Training)] <- 538.2
+
+summary(Training)
+
+#Eliminar los valores ISLAND de ocean_proximity debido a que no existe en el dataset de evauacion
+Training <- Training[Training$ocean_proximity != "ISLAND", ]
+
+summary(Training)
+
+```
+
+### Transformacion de variables categoricas s numericas
+
+```{r}
+#Cambia a valores nuemricos la variable ocean_proximity
+Training[,11]<-as.integer(Training[,11])
+
+summary(Training)
+
+unique(Training$ocean_proximity)
+
+```
+
+
+### Quitando ID de los datos
+
+```{r}
+#Quitando ID
+Training <- Training[-1]
+Training
+```
+
+
+
+### Grafica de correlacion entre las variables
+
+```{r}
+corrplot(cor(Training[ , 1:10]),
+         method = "number",
+         number.cex=0.75,
+         type = "upper")
+```
+
+* Segun la grafica anterior la varible median_income es la que mayor correlacion tiene con median_house_value
+
+### Grafica usando x= median_income,y=median_house_value
+
+```{r,message=FALSE, warning=FALSE}
+graf_income_value<- ggplot(Training,aes(x= median_income,y=median_house_value)) + geom_point(col = "blue") + geom_smooth(col = "red")
+graf_income_value
+```
+
+* La grafica anterior muestra que si hay cierta relacion entre las variables pero realmente no es tan fuerte
+
+### Grafica usando x= total_rooms+total_bedrooms,y=median_house_value
+
+```{r,message=FALSE, warning=FALSE}
+graf_rooms_value<- ggplot(Training,aes(x= total_rooms+total_bedrooms,y=median_house_value)) + geom_point(col = "blue") + geom_smooth(col = "red")
+graf_rooms_value
+```
+
+* La grafica entre las variables anteriores refleja que no es una buena metrica de regresion
+
+### Grafica usando x= housing_median_age,y=median_house_value
+
+```{r,message=FALSE, warning=FALSE}
+graf_age_value<- ggplot(Training,aes(x= housing_median_age,y=median_house_value)) + geom_point(col = "blue") + geom_smooth(col = "red")
+graf_age_value
+```
+
+* Tampoco se puede utilizar unicamente housing_median_age como parametro
+
+### Usando una regresion lineal
+
+```{r,message=FALSE,warning=FALSE}
+#Validando si los datos aportan informacion al modelo
+reg<- lm(median_house_value~., data = Training)
+summary(reg)
+```
+
+* Todos los datos aportan informacion relevante al modelo al hacer una regresion lineal a excepcion de ocean_proximity
+* Vemos tambien que una regresion de este tipo produce mucho error
+
+#### Usando el algoritmo XGBoost 
+
+* Investigando me encontre que unos de los mejores algoritmos para este tipo de problemas es XGBoost
+
+```{r}
+
+#Parametros de control
+cv.ctrl <- trainControl(method = "repeatedcv", repeats = 1,number = 3)
+#method: Seleccion de metodo de remuestro, en este caso repeticion de datos de entrenamiento
+#repeats: numero de muestras aleatoria por iteracion
+#number: cantidad de remuestreos
+
+
+xgb.grid <- expand.grid(nrounds = 400,
+                        max_depth = seq(10,15),
+                        eta = c(0.01,0.3),
+                        gamma = c(0.0, 0.2, 1),
+                        colsample_bytree = c(0.5,0.8, 1),
+                        min_child_weight=seq(1,10),
+                        subsample=c(0.01,0.5, 1)
+)
+
+xgb.grid <- expand.grid(nrounds = 800,
+                        max_depth = 11,
+                        eta = 0.01,
+                        gamma = 1,
+                        colsample_bytree = 0.8,
+                        min_child_weight=1,
+                        subsample=0.5
+)
+
+#Creando la matriz de parametros de los modelos
+#nrounds = numero de arboles creados por parametro
+#max_depth = maxima profundidad de los arboles
+#eta = learning rate, valor usado para definir el tamaño de los nuevos pesos
+#gamma = minimo error requerido para realizar una partición adicional en un nodo hoja del árbol.
+#colsample_bytree = Fraccion de las features utilizada para entrenar cada arbol
+#min_child_weight = dejar de intentar dividir una vez que el tamaño de la muestra en un nodo sea el parametro
+#subsample = fraccion de las muestras aleatorias para entrenar cada arbol
+
+xgb.grid
+
+#Ejecución de XGBoost
+
+xgb_tune <- train(median_house_value ~.,
+                 data=Training,
+                 objective="reg:squarederror",
+                 method="xgbTree",
+                 nthread = 8,
+                 metric = "RMSE",
+                 trControl=cv.ctrl,
+                 tuneGrid=xgb.grid
+)
+
+#objective="reg:squarederror" objetivo de XGBoost, es este caso regresion con MSE
+#method="xgbTree", Metodo a utilizar para la regresion en este caso, estructuras xgbTree
+#nthread = 8,, Numero de hilos para la ejecucion
+#metric = "RMSE", Metrica de medicion del error
+#trControl=cv.ctrl, utilizando los parametros de control
+#tuneGrid=xgb.grid, utilizando parametros de Tree Booster 
+
+#Resultados por cada modelo
+xgb_tune$results
+
+#Guardando la estructura
+saveRDS(xgb_tune, "xgb_tune-800-xgbTree_8-4_01-03_0-02-1_8-1_1-12_5-1.rds")
+
+#Guardando los resultados
+write.csv(xgb_tune$results, "xgb_tune-800-xgbTree_8-4_01-03_0-02-1_8-1_1-12_5-1.csv", row.names = TRUE)
+
+```
+
+## Generacion de documento de salida
+
+
+```{r}
+#Cargo archivo a predecir
+test_final <- read.csv("test.csv")
+
+
+#Agrega a valores NA de total_bedrooms la media igual a la anterior
+summary(test_final)
+
+test_final[is.na(test_final)] <- 538.2
+
+#Valido que los tipo de ocean_proximity
+unique(test_final[10])
+
+#Cambiando variables categoricas a numericas iguales al set de entrnamiento
+test_final$ocean_proximity <- as.character(test_final$ocean_proximity)
+test_final[test_final$ocean_proximity == "NEAR OCEAN", 10] <- 5
+test_final[test_final$ocean_proximity == "INLAND", 10] <- 2
+test_final[test_final$ocean_proximity == "<1H OCEAN", 10] <- 1
+test_final[test_final$ocean_proximity == "NEAR BAY", 10] <- 4
+test_final$ocean_proximity <- as.integer(test_final$ocean_proximity)
+
+#Prediccion de datos anteriores
+prediction_xg <- predict(xgb_tune, newdata= test_final)
+
+#Creando el dataset de salida
+salida <- data.frame(id = test_final$id, median_house_value=prediction_xg)
+salida
+
+#Generando archivo de salida
+write.csv(salida, "salida.csv", row.names = FALSE)
+```
+
+
+
+
