@@ -26,14 +26,14 @@ shinyUI(
             ),
             
             # Slider Input Sencillo
-            sliderInput("Slider-Input", "Rango de CO (ppms):", value = c(0,50), min = 0, max = 50, step = 1, animate = TRUE),
+            sliderInput("Slider-Input", "Rango de CO (ppms):", value = c(0,10), min = 0, max = 10, step = 0.1, animate = TRUE),
             sliderInput("Slider-Input2", "Rango de NMHC (ppms):", value = c(0,1200), min = 0, max = 1200, step = 1, animate = TRUE),
-            sliderInput("Slider-Input3", "Rango de C6H6 (ppms):", value = c(0,200), min = 0, max = 200, step = 1, animate = TRUE),
-            sliderInput("Slider-Input4", "Rango de NOx (ppms):", value = c(0,1500), min = 0, max = 1500, step = 1, animate = TRUE),
-            sliderInput("Slider-Input5", "Rango de NO2 (ppms):", value = c(0,400), min = 0, max = 400, step = 1, animate = TRUE),
-            sliderInput("Slider-Input6", "Rango de Temperatura (Celsius):", value = c(0,50), min = 0, max = 50, step = 1, animate = TRUE),
-            sliderInput("Slider-Input7", "Rango de Humedad Relativa (%):", value = c(0,100), min = 0, max = 100, step = 1, animate = TRUE),
-            sliderInput("Slider-Input8", "Rango de Humedad Absoluta:", value = c(0,2), min = 0, max = 2, step = 0.1, animate = TRUE),
+            sliderInput("Slider-Input3", "Rango de C6H6 (ppms):", value = c(0,40), min = 0, max = 40, step = 0.5, animate = TRUE),
+            sliderInput("Slider-Input4", "Rango de NOx (ppms):", value = c(0,500), min = 0, max = 500, step = 1, animate = TRUE),
+            sliderInput("Slider-Input5", "Rango de NO2 (ppms):", value = c(0,200), min = 0, max = 200, step = 1, animate = TRUE),
+            sliderInput("Slider-Input6", "Rango de Temperatura (Celsius):", value = c(0,30), min = 0, max = 30, step = 0.5, animate = TRUE),
+            sliderInput("Slider-Input7", "Rango de Humedad Relativa (%):", value = c(10,90), min = 10, max = 90, step = 1, animate = TRUE),
+            sliderInput("Slider-Input8", "Rango de Humedad Absoluta:", value = c(0.4,1.5), min = 0.4, max = 1.5, step = 0.01, animate = TRUE),
             
             # Date Input con Rango
             dateRangeInput("Date-Input", "Seleccione Rangos de Fecha:", start = '2004-03-10', end = '2005-04-04', max = '2005-04-04', min = '2004-03-10', separator = 'a')

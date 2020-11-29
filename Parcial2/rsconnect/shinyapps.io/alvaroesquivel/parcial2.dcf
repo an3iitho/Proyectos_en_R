@@ -5,8 +5,9 @@ account: alvaroesquivel
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3317282
-bundleId: 3917496
+bundleId: 3917565
 url: https://alvaroesquivel.shinyapps.io/parcial2/
-when: 1606610946.42761
+when: 1606613625.84842
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: Links shinyapp.txt
